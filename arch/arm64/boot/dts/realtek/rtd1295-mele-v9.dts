@@ -1,0 +1,85 @@
+/*
+ * Copyright (c) 2017-2019 Andreas Färber
+ *
+ * SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/gpio/gpio.h>
+
+#include "rtd1295.dtsi"
+
+/ {
+	compatible = "mele,v9", "realtek,rtd1295";
+	model = "MeLE V9";
+
+	memory@1f000 {
+		device_type = "memory";
+		reg = <0x1f000 0x7ffe1000>; /* boot ROM to 2 GiB */
+	};
+
+	aliases {
+		serial0 = &uart0;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+
+	sata0_reg: sata0-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "SATA0";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpios = <&misc_gpio 16 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+};
+
+&cpu0 {
+	cpu-supply = <&g2227_dcdc2>;
+};
+
+&cpu1 {
+	cpu-supply = <&g2227_dcdc2>;
+};
+
+&cpu2 {
+	cpu-supply = <&g2227_dcdc2>;
+};
+
+&cpu3 {
+	cpu-supply = <&g2227_dcdc2>;
+};
+
+&i2c_0 {
+	status = "okay";
+	clock-frequency = <400000>;
+
+#include "rtd129x-g2227.dtsi"
+};
+
+&irda {
+	status = "okay";
+};
+
+&l2 {
+	l2-supply = <&g2227_ldo3>;
+};
+
+&mali {
+	mali-supply = <&g2227_dcdc3>;
+};
+
+&sata {
+	status = "okay";
+};
+
+&sata0 {
+	target-supply = <&sata0_reg>;
+};
+
+&uart0 {
+	status = "okay";
+};

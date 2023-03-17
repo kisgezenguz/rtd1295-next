@@ -1,0 +1,479 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR BSD-2-Clause)
+/*
+ * Copyright (c) 2017-2019 Andreas Färber
+ */
+
+/memreserve/ 0x00000000 0x0000a800; /* boot code */
+/memreserve/ 0x0000a800 0x000f5800;
+/memreserve/ 0x17fff000 0x00001000;
+
+#include <dt-bindings/clock/realtek,rtd1195.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/reset/realtek,rtd1195.h>
+
+/ {
+	compatible = "realtek,rtd1195";
+	interrupt-parent = <&gic>;
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	aliases {
+		i2c0 = &i2c_0;
+		i2c1 = &i2c_1;
+		i2c2 = &i2c_2;
+		i2c3 = &i2c_3;
+		i2c4 = &i2c_4;
+		i2c5 = &i2c_5;
+		i2c6 = &i2c_6;
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu0: cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a7";
+			reg = <0x0>;
+			enable-method = "realtek,rtd1195-smp";
+			clock-frequency = <1000000000>;
+		};
+
+		cpu1: cpu@1 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a7";
+			reg = <0x1>;
+			enable-method = "realtek,rtd1195-smp";
+			clock-frequency = <1000000000>;
+		};
+	};
+
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		rpc_comm: rpc@b000 {
+			reg = <0x0000b000 0x1000>;
+		};
+
+		audio@1b00000 {
+			reg = <0x01b00000 0x400000>;
+		};
+
+		rpc_ringbuf: rpc@1ffe000 {
+			reg = <0x01ffe000 0x4000>;
+		};
+
+		secure@10000000 {
+			reg = <0x10000000 0x100000>;
+			no-map;
+		};
+	};
+
+	arm-pmu {
+		compatible = "arm,cortex-a7-pmu";
+		interrupts = <GIC_SPI 48 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 49 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-affinity = <&cpu0>, <&cpu1>;
+	};
+
+	timer {
+		compatible = "arm,armv7-timer";
+		interrupts = <GIC_PPI 13
+			(GIC_CPU_MASK_SIMPLE(2) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 14
+			(GIC_CPU_MASK_SIMPLE(2) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 11
+			(GIC_CPU_MASK_SIMPLE(2) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 10
+			(GIC_CPU_MASK_SIMPLE(2) | IRQ_TYPE_LEVEL_LOW)>;
+		clock-frequency = <27000000>;
+	};
+
+	osc27M: osc {
+		compatible = "fixed-clock";
+		clock-frequency = <27000000>;
+		#clock-cells = <0>;
+		clock-output-names = "osc27M";
+	};
+
+	clk_sys: sys-clk {
+		compatible = "fixed-factor-clock";
+		clocks = <&osc27M>;
+		clock-div = <1>;
+		clock-mult = <9>;
+		#clock-cells = <0>;
+	};
+
+	soc {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x00000000 0x00000000 0x0000a800>,
+			 <0x18000000 0x18000000 0x00070000>,
+			 <0x18100000 0x18100000 0x01000000>,
+			 <0x80000000 0x80000000 0x80000000>;
+
+		rbus: bus@18000000 {
+			compatible = "simple-bus";
+			reg = <0x18000000 0x70000>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x0 0x18000000 0x70000>;
+
+			crt: syscon@0 {
+				compatible = "syscon", "simple-mfd";
+				reg = <0x0 0x1000>;
+				reg-io-width = <4>;
+				#address-cells = <1>;
+				#size-cells = <1>;
+				ranges = <0x0 0x0 0x1000>;
+			};
+
+			iso: syscon@7000 {
+				compatible = "syscon", "simple-mfd";
+				reg = <0x7000 0x1000>;
+				reg-io-width = <4>;
+				#address-cells = <1>;
+				#size-cells = <1>;
+				ranges = <0x0 0x7000 0x1000>;
+			};
+
+			efuse: efuse@17000 {
+				compatible = "realtek,rtd1195-efuse";
+				reg = <0x17000 0x400>;
+				read-only;
+				#address-cells = <1>;
+				#size-cells = <1>;
+			};
+
+			sb2: syscon@1a000 {
+				compatible = "syscon", "simple-mfd";
+				reg = <0x1a000 0x1000>;
+				reg-io-width = <4>;
+				#address-cells = <1>;
+				#size-cells = <1>;
+				ranges = <0x0 0x1a000 0x1000>;
+			};
+
+			misc: syscon@1b000 {
+				compatible = "syscon", "simple-mfd";
+				reg = <0x1b000 0x1000>;
+				reg-io-width = <4>;
+				#address-cells = <1>;
+				#size-cells = <1>;
+				ranges = <0x0 0x1b000 0x1000>;
+			};
+
+			scpu_wrapper: syscon@1d000 {
+				compatible = "syscon", "simple-mfd";
+				reg = <0x1d000 0x1000>;
+				reg-io-width = <4>;
+				#address-cells = <1>;
+				#size-cells = <1>;
+				ranges = <0x0 0x1d000 0x1000>;
+			};
+
+			/* TODO 0x18030000 0x10000 or 0x18003000 0x1000? */
+			mali: gpu@30000 {
+				compatible = "realtek,rtd1195-mali", "arm,mali-400";
+				reg = <0x30000 0x10000>;
+				/* TODO which bus clk to pass? */
+				clocks = <&clkc RTD1195_CLK_EN_GPU>, <&osc27M>;
+				clock-names = "core", "bus";
+				resets = <&reset1 RTD1195_RSTN_GPU>;
+				interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>,
+					     <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>,
+					     <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>,
+					     <GIC_SPI 27 IRQ_TYPE_LEVEL_HIGH>,
+					     <GIC_SPI 28 IRQ_TYPE_LEVEL_HIGH>,
+					     <GIC_SPI 29 IRQ_TYPE_LEVEL_HIGH>;
+				interrupt-names = "gp",  "gpmmu",
+						  "pp0", "ppmmu0",
+						  "pp1", "ppmmu1";
+			};
+		};
+
+		gic: interrupt-controller@ff011000 {
+			compatible = "arm,cortex-a7-gic";
+			reg = <0xff011000 0x1000>,
+			      <0xff012000 0x2000>,
+			      <0xff014000 0x2000>,
+			      <0xff016000 0x2000>;
+			interrupts = <GIC_PPI 9 (GIC_CPU_MASK_SIMPLE(2) | IRQ_TYPE_LEVEL_LOW)>;
+			interrupt-controller;
+			#interrupt-cells = <3>;
+		};
+	};
+};
+
+&crt {
+	clkc: clock-controller@0 {
+		compatible = "realtek,rtd1195-clk";
+		reg = <0x0 0x1000>;
+		clocks = <&osc27M>, <&clk_sys>;
+		#clock-cells = <1>;
+	};
+
+	reset1: reset-controller@0 {
+		compatible = "snps,dw-low-reset";
+		reg = <0x0 0x4>;
+		#reset-cells = <1>;
+	};
+
+	reset2: reset-controller@4 {
+		compatible = "snps,dw-low-reset";
+		reg = <0x4 0x4>;
+		#reset-cells = <1>;
+	};
+
+	reset3: reset-controller@8 {
+		compatible = "snps,dw-low-reset";
+		reg = <0x8 0x4>;
+		#reset-cells = <1>;
+	};
+
+	crt_pinctrl: pinctrl@300 {
+		compatible = "realtek,rtd1195-crt-pinctrl";
+		reg = <0x300 0x78>;
+
+		i2c5_pins: i2c5-pins {
+			function = "i2c5";
+			groups = "i2c_scl_5", "i2c_sda_5";
+		};
+	};
+};
+
+&iso {
+	iso_clkc: clock-controller@0 {
+		compatible = "realtek,rtd1195-iso-clk";
+		reg = <0x0 0x100>;
+		clocks = <&osc27M>, <&clk_sys>;
+		#clock-cells = <1>;
+	};
+
+	iso_irq_mux: interrupt-controller@0 {
+		compatible = "realtek,rtd1195-iso-irq-mux";
+		reg = <0x0 0x100>;
+		interrupts = <GIC_SPI 41 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-controller;
+		#interrupt-cells = <1>;
+	};
+
+	iso_reset: reset-controller@88 {
+		compatible = "snps,dw-low-reset";
+		reg = <0x88 0x4>;
+		#reset-cells = <1>;
+	};
+
+	iso_gpio: gpio@100 {
+		compatible = "realtek,rtd1195-iso-gpio";
+		reg = <0x100 0x100>;
+		gpio-controller;
+		gpio-ranges = <&iso_pinctrl 0 0 21>;
+		#gpio-cells = <2>;
+	};
+
+	iso_pinctrl: pinctrl@300 {
+		compatible = "realtek,rtd1195-iso-pinctrl";
+		reg = <0x300 0x14>;
+
+		i2c0_pins: i2c0-pins {
+			function = "i2c0";
+			groups = "i2c_scl_0", "i2c_sda_0";
+		};
+
+		i2c6_pins: i2c6-pins {
+			function = "i2c6";
+			groups = "i2c_scl_6", "i2c_sda_6";
+		};
+
+		uart0_pins: uart0-pins {
+			function = "uart0";
+			groups = "ur0_rx", "ur0_tx";
+		};
+	};
+
+	wdt: watchdog@680 {
+		compatible = "realtek,rtd1295-watchdog";
+		reg = <0x680 0x100>;
+		clocks = <&osc27M>;
+	};
+
+	uart0: serial@800 {
+		compatible = "snps,dw-apb-uart";
+		reg = <0x800 0x400>;
+		reg-shift = <2>;
+		reg-io-width = <4>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&uart0_pins>;
+		resets = <&iso_reset RTD1195_ISO_RSTN_UR0>;
+		clocks = <&iso_clkc RTD1195_ISO_CLK_EN_MISC_UR0>;
+		interrupt-parent = <&iso_irq_mux>;
+		interrupts = <2>;
+		status = "disabled";
+	};
+
+	i2c_0: i2c@d00 {
+		compatible = "snps,designware-i2c";
+		reg = <0xd00 0x100>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c0_pins>;
+		resets = <&iso_reset RTD1195_ISO_RSTN_I2C_0>;
+		clocks = <&iso_clkc RTD1195_ISO_CLK_EN_I2C_0>;
+		interrupt-parent = <&iso_irq_mux>;
+		interrupts = <8>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		status = "disabled";
+	};
+
+	i2c_6: i2c@e00 {
+		compatible = "snps,designware-i2c";
+		reg = <0xe00 0x100>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c6_pins>;
+		resets = <&iso_reset RTD1195_ISO_RSTN_I2C_6>;
+		clocks = <&iso_clkc RTD1195_ISO_CLK_EN_I2C_6>;
+		interrupt-parent = <&iso_irq_mux>;
+		interrupts = <10>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		status = "disabled";
+	};
+};
+
+&misc {
+	misc_irq_mux: interrupt-controller@0 {
+		compatible = "realtek,rtd1195-misc-irq-mux";
+		reg = <0x0 0x100>;
+		interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-controller;
+		#interrupt-cells = <1>;
+	};
+
+	misc_gpio: gpio@100 {
+		compatible = "realtek,rtd1195-misc-gpio";
+		reg = <0x100 0x100>;
+		gpio-controller;
+		gpio-ranges = <&crt_pinctrl 0 0 60>;
+		#gpio-cells = <2>;
+	};
+
+	uart1: serial@200 {
+		compatible = "snps,dw-apb-uart";
+		reg = <0x200 0x100>;
+		reg-shift = <2>;
+		reg-io-width = <4>;
+		resets = <&reset2 RTD1195_RSTN_UR1>;
+		clocks = <&clkc RTD1195_CLK_EN_UR1>;
+		interrupt-parent = <&misc_irq_mux>;
+		interrupts = <3>;
+		status = "disabled";
+	};
+
+	i2c_1: i2c@300 {
+		compatible = "snps,designware-i2c";
+		reg = <0x300 0x100>;
+		resets = <&reset2 RTD1195_RSTN_I2C_1>;
+		clocks = <&clkc RTD1195_CLK_EN_I2C_1>;
+		interrupt-parent = <&misc_irq_mux>;
+		interrupts = <4>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		status = "disabled";
+	};
+
+	rtc: rtc@600 {
+		compatible = "realtek,rtd1195-rtc", "realtek,rtd1295-rtc";
+		reg = <0x600 0x100>;
+		resets = <&reset2 RTD1195_RSTN_RTC>;
+		clocks = <&clkc RTD1195_CLK_EN_MISC_RTC>;
+	};
+
+	i2c_2: i2c@700 {
+		compatible = "snps,designware-i2c";
+		reg = <0x700 0x100>;
+		resets = <&reset2 RTD1195_RSTN_I2C_2>;
+		clocks = <&clkc RTD1195_CLK_EN_I2C_2>;
+		interrupt-parent = <&misc_irq_mux>;
+		interrupts = <26>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		status = "disabled";
+	};
+
+	i2c_3: i2c@900 {
+		compatible = "snps,designware-i2c";
+		reg = <0x900 0x100>;
+		resets = <&reset2 RTD1195_RSTN_I2C_3>;
+		clocks = <&clkc RTD1195_CLK_EN_I2C_3>;
+		interrupt-parent = <&misc_irq_mux>;
+		interrupts = <23>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		status = "disabled";
+	};
+
+	i2c_4: i2c@a00 {
+		compatible = "snps,designware-i2c";
+		reg = <0xa00 0x100>;
+		resets = <&reset2 RTD1195_RSTN_I2C_4>;
+		clocks = <&clkc RTD1195_CLK_EN_I2C_4>;
+		interrupt-parent = <&misc_irq_mux>;
+		interrupts = <15>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		status = "disabled";
+	};
+
+	i2c_5: i2c@b00 {
+		compatible = "snps,designware-i2c";
+		reg = <0xb00 0x100>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c5_pins>;
+		resets = <&reset2 RTD1195_RSTN_I2C_5>;
+		clocks = <&clkc RTD1195_CLK_EN_I2C_5>;
+		interrupt-parent = <&misc_irq_mux>;
+		interrupts = <14>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		status = "disabled";
+	};
+};
+
+&sb2 {
+	sb2_hd_sem: hwspinlock@0 {
+		compatible = "realtek,rtd1195-sb2-sem";
+		reg = <0x0 0x4>;
+		#hwlock-cells = <0>;
+	};
+
+	bridge@0 {
+		compatible = "realtek,rtd1195-sb2";
+		reg = <0x0 0x100>;
+		resets = <&reset3 RTD1195_RSTN_SB2>;
+		interrupts = <GIC_SPI 36 IRQ_TYPE_LEVEL_HIGH>;
+	};
+
+	chip-info@200 {
+		compatible = "realtek,rtd1195-chip";
+		reg = <0x200 0x8>;
+	};
+
+	sb2_hd_sem_new: hwspinlock@620 {
+		compatible = "realtek,rtd1195-sb2-sem";
+		reg = <0x620 0x20>;
+		#hwlock-cells = <1>;
+	};
+};
+
+&scpu_wrapper {
+	scpu@0 {
+		compatible = "realtek,rtd1195-scpu-wrapper";
+		reg = <0x0 0x500>;
+		clocks = <&clkc RTD1195_CLK_EN_SCPU>;
+		interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>;
+	};
+};

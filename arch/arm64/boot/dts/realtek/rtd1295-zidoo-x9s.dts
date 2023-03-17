@@ -1,0 +1,180 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR BSD-2-Clause)
+/*
+ * Copyright (c) 2016-2019 Andreas Färber
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/leds/common.h>
+
+#include "rtd1295.dtsi"
+
+/ {
+	compatible = "zidoo,x9s", "realtek,rtd1295";
+	model = "Zidoo X9S";
+
+	memory@1f000 {
+		device_type = "memory";
+		reg = <0x1f000 0x7ffe1000>; /* boot ROM to 2 GiB */
+	};
+
+	aliases {
+		serial0 = &uart0;
+		serial1 = &uart1;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+
+	/*firmware {
+		optee {
+			compatible = "linaro,optee-tz";
+			method = "smc";
+		};
+	};*/
+
+	sdio_pwrseq: sdio-pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		reset-gpios = <&iso_gpio 23 GPIO_ACTIVE_LOW>;
+		power-off-delay-us = <50000>;
+		post-power-on-delay-ms = <10>;
+	};
+
+	sata0_reg: sata0-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "SATA0";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&misc_gpio 16 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
+	spi {
+		compatible = "spi-gpio";
+		sck-gpios = <&iso_gpio 4 GPIO_ACTIVE_HIGH>;
+		mosi-gpios = <&iso_gpio 3 GPIO_ACTIVE_HIGH>;
+		cs-gpios = <&iso_gpio 2 GPIO_ACTIVE_LOW>;
+		num-chipselects = <1>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		tm1628: led-controller@0 {
+			compatible = "titanmec,tm1628";
+			reg = <0>;
+			spi-3wire;
+			spi-lsb-first;
+			spi-rx-delay-us = <1>;
+			spi-max-frequency = <500000>;
+			#grids = <7>;
+			#address-cells = <2>;
+			#size-cells = <0>;
+
+			display@0,10 {
+				reg = <0 10>, <0 9>, <0 8>, <0 7>;
+			};
+
+			colon@5,4 {
+				reg = <5 4>;
+				color = <LED_COLOR_ID_WHITE>;
+				function = LED_FUNCTION_STATUS;
+				function-enumerator = <5>;
+			};
+		};
+	};
+};
+
+&cpu0 {
+	cpu-supply = <&g2227_dcdc2>;
+};
+
+&cpu1 {
+	cpu-supply = <&g2227_dcdc2>;
+};
+
+&cpu2 {
+	cpu-supply = <&g2227_dcdc2>;
+};
+
+&cpu3 {
+	cpu-supply = <&g2227_dcdc2>;
+};
+
+/*&gmac {
+	status = "okay";
+};*/
+
+&i2c_0 {
+	status = "okay";
+	clock-frequency = <400000>;
+
+#include "rtd129x-g2227.dtsi"
+};
+
+&irda {
+	status = "okay";
+};
+
+&iso_gpio {
+	hog33 {
+		gpio-hog;
+		output-low;
+		gpios = <33 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&l2 {
+	l2-supply = <&g2227_ldo3>;
+};
+
+&mali {
+	mali-supply = <&g2227_dcdc3>;
+};
+
+&misc_gpio {
+	hog8 {
+		gpio-hog;
+		input;
+		gpios = <8 GPIO_ACTIVE_HIGH>;
+	};
+
+	hog100 {
+		gpio-hog;
+		output-high;
+		gpios = <100 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&pcie2 {
+	max-link-speed = <1>;
+};
+
+&sata {
+	status = "okay";
+};
+
+&sata0 {
+	target-supply = <&sata0_reg>;
+};
+
+&sdio {
+	status = "okay";
+	bus-width = <4>;
+	non-removable;
+	mmc-pwrseq = <&sdio_pwrseq>;
+};
+
+&sdmmc {
+	status = "disabled";
+	gpios = <&misc_gpio 99 GPIO_ACTIVE_HIGH>;
+	bus-width = <4>;
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&uart1 {
+	status = "okay";
+};

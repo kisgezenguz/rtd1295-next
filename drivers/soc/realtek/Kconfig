@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+if ARCH_REALTEK || COMPILE_TEST
+
+config REALTEK_SOC
+	tristate "Realtek chip info"
+	default ARCH_REALTEK
+	select SOC_BUS
+	help
+	  Say 'y' here to enable support for SoC info on Realtek RTD1195 and
+	  RTD1295 SoC families.
+	  If unsure, say 'n'.
+
+config REALTEK_SB2
+	bool "Realtek SB2"
+	default ARCH_REALTEK
+	help
+	  Say 'y' here to enable support for SB2 on Realtek RTD1195 and
+	  RTD1295 SoC families.
+	  If unsure, say 'n'.
+
+config REALTEK_SCPU
+	bool "Realtek SCPU Wrapper"
+	default ARCH_REALTEK
+	help
+	  Say 'y' here to enable support for SCPU Wrapper on Realtek RTD1195
+	  and RTD1295 SoC families.
+	  If unsure, say 'n'.
+
+config REALTEK_PM_DOMAINS
+	bool "Realtek power domains"
+	depends on PM
+	select PM_GENERIC_DOMAINS
+	help
+	  Say 'y' here to enable support for powerctrl on Realtek RTD1295 SoC.
+	  If unsure, say 'n'.
+
+endif
